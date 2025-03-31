@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Code Tower Coop</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+      body {
+        font-family: sans-serif;
+        padding: 20px;
+        background: #f3f3f3;
+      }
+      #character {
+        font-size: 48px;
+        margin: 20px 0;
+      }
+      #status {
+        margin-top: 10px;
+        font-weight: bold;
+      }
+      textarea {
+        width: 100%;
+        font-family: monospace;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🏰 Code Tower - Coop Mode</h1>
+    <input id="roomId" placeholder="Room ID" />
+    <button onclick="joinRoom()">Rejoindre</button>
+
+    <div id="game" style="display: none">
+      <p>Ton ID : <span id="playerIdDisplay"></span></p>
+      <div id="character">🧑‍💻</div>
+      <textarea id="code" rows="6">
+function solve() {
+  return 42;
+}</textarea
+      ><br />
+      <button onclick="submitCode()">Envoyer</button>
+      <div id="status"></div>
+    </div>
+
+    <script>
+      const socket = io();
+      let roomId, playerId;
+      let stage = 0;
+
+      function joinRoom() {
+        roomId = document.getElementById("roomId").value;
+        socket.emit("join_room", { roomId });
+      }
+
+      socket.on("assigned_id", (id) => {
+        playerId = id;
+        document.getElementById("playerIdDisplay").innerText = id;
+        document.getElementById("game").style.display = "block";
+      });
+
+      function submitCode() {
+        const code = document.getElementById("code").value;
+        socket.emit("submit_code", { roomId, playerId, code });
+        document.getElementById("status").innerText =
+          "⏳ En attente des autres...";
+      }
+
+      socket.on("stage_cleared", (newStage) => {
+        stage = newStage;
+        document.getElementById("status").innerText =
+          "✅ Etape validée ! Étape suivante : " + stage;
+        document.getElementById("character").innerText += "⬆️";
+        document.getElementById("code").value = getNextChallenge(stage);
+      });
+
+      socket.on("waiting_others", (waitingId) => {
+        document.getElementById(
+          "status"
+        ).innerText = `⏳ En attente des autres joueurs...`;
+      });
+
+      socket.on("game_over", (msg) => {
+        document.getElementById("status").innerText = "❌ " + msg;
+      });
+
+      function getNextChallenge(stage) {
+        const challenges = [
+          "function solve() {\n  return 42;\n}",
+          "const nums = [1,2,3];\nconst result = nums.map(n => n * 2);",
+          "const nums = [1,2,3,4];\nconst evens = nums.filter(n => n % 2 === 0);",
+          "const nums = [1,2,3];\nconst sum = nums.reduce((acc, curr) => acc + curr, 0);",
+        ];
+        return (
+          challenges[stage % challenges.length] ||
+          "function solve() { return 0; }"
+        );
+      }
+    </script>
+  </body>
+</html>
