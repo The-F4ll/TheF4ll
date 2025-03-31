@@ -26,12 +26,13 @@ a:hover {
   color: #535bf2;
 }
 
-body {
-  margin: 0;
+main {
   display: flex;
-  place-items: center;
+  flex-direction: column;
+  justify-content: space-between;
+  margin: 0;
   min-width: 320px;
-  min-height: 100vh;
+  /* Fond noir pour le body en dark mode */
 }
 
 h1 {
