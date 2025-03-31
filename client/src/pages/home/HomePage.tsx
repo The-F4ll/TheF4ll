@@ -11,7 +11,7 @@ const HomePage = () => {
             Rejoindre en tant que joueur
           </Button>
         </Link>
-        <Link to="/join/spectator" className="block w-full">
+        <Link to="/spectator" className="block w-full">
           <Button variant="secondary" fullWidth>
             Rejoindre en tant que spectateur
           </Button>

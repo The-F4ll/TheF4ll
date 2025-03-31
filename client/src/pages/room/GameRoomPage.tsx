@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Button from "../../components/common/Button";
 import PlayerList from "../../components/player/PlayerList";
@@ -10,26 +10,74 @@ import { SpectatorContext } from "../../context/SpectatorContext";
 
 const GameRoomPage = () => {
   const { roomId } = useParams();
-  const { room, startGame, allPlayersReady } = useContext(RoomContext);
+  const { room, joinRoom, joinRoomAsSpectator, startGame, allPlayersReady } =
+    useContext(RoomContext);
   const { player, isReady, setReady } = useContext(PlayerContext);
   const { spectator } = useContext(SpectatorContext);
-  const [isHost, setIsHost] = useState(false);
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(true);
+  const hasInitializedRef = useRef(false);
 
+  // Rejoindre la salle au chargement si l'ID est disponible (une seule fois)
   useEffect(() => {
-    if (room && room.players && room.players.length > 0) {
-      setIsHost(room.players[0].id === player?.id);
-    } else {
-      setIsHost(false);
+    const initRoom = async () => {
+      // Éviter les initialisations multiples
+      if (hasInitializedRef.current || !roomId) return;
+
+      setIsLoading(true);
+
+      try {
+        // Marquer comme initialisé avant d'effectuer les opérations asynchrones
+        hasInitializedRef.current = true;
+
+        if (spectator?.id) {
+          // Si c'est un spectateur, rejoindre en tant que spectateur
+          await joinRoomAsSpectator(roomId);
+        } else if (player?.id) {
+          // Si c'est un joueur, rejoindre en tant que joueur
+          await joinRoom(roomId);
+        } else {
+          console.error("Ni joueur ni spectateur défini");
+        }
+      } catch (error) {
+        console.error("Erreur lors de la connexion à la salle:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initRoom();
+
+    // Ce useEffect ne doit s'exécuter qu'une seule fois au montage du composant
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roomId]);
+
+  // Actualiser la salle si le room context change
+  useEffect(() => {
+    if (room) {
+      setIsLoading(false);
     }
-  }, [room, player]);
+  }, [room]);
 
   const handleStartGame = () => {
-    startGame(roomId);
-    navigate(`/game/${roomId}`);
+    if (roomId && allPlayersReady) {
+      startGame(roomId);
+      navigate(`/game/${roomId}`);
+    }
   };
 
   const isSpectator = !!spectator?.id;
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8 min-h-screen flex justify-center items-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-t-4 border-blue-500 border-solid rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-xl">Chargement de la salle...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 min-h-screen">
@@ -38,17 +86,32 @@ const GameRoomPage = () => {
         <h2 className="text-xl font-semibold mb-2">
           Code de la salle: <span className="font-mono">{roomId}</span>
         </h2>
+        <p className="text-sm text-gray-400">
+          Partagez ce code avec vos amis pour qu'ils rejoignent cette salle
+        </p>
       </div>
 
       <div className="grid md:grid-cols-2 gap-8">
         <div className="bg-gray-800 p-6 rounded-lg">
-          <h2 className="text-2xl font-bold mb-4">Joueurs</h2>
+          <h2 className="text-2xl font-bold mb-4">
+            Joueurs ({room?.players.length || 0})
+          </h2>
           <PlayerList players={room?.players || []} />
+          <p className="mt-4 text-sm text-gray-400">
+            {allPlayersReady
+              ? "Tous les joueurs sont prêts!"
+              : "En attente que tous les joueurs soient prêts..."}
+          </p>
         </div>
 
         <div className="bg-gray-800 p-6 rounded-lg">
-          <h2 className="text-2xl font-bold mb-4">Spectateurs</h2>
+          <h2 className="text-2xl font-bold mb-4">
+            Spectateurs ({room?.spectators?.length || 0})
+          </h2>
           <SpectatorsList spectators={room?.spectators || []} />
+          <p className="mt-4 text-sm text-gray-400">
+            Les spectateurs peuvent observer la partie mais ne peuvent pas jouer
+          </p>
         </div>
       </div>
 
@@ -60,16 +123,16 @@ const GameRoomPage = () => {
               onToggleReady={() => setReady(!isReady)}
             />
 
-            {isHost && (
-              <Button
-                variant="success"
-                fullWidth
-                disabled={!allPlayersReady}
-                onClick={handleStartGame}
-              >
-                Lancer la partie
-              </Button>
-            )}
+            <Button
+              variant="success"
+              fullWidth
+              disabled={!allPlayersReady}
+              onClick={handleStartGame}
+            >
+              {allPlayersReady
+                ? "Lancer la partie"
+                : "En attente des joueurs..."}
+            </Button>
           </div>
         )}
       </div>

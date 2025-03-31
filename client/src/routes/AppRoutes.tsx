@@ -6,6 +6,7 @@ import GameRoomPage from "../pages/room/GameRoomPage";
 import GameplayPage from "../pages/game/GameplayPage";
 import SuccessPage from "../pages/results/SuccessPage";
 import FailurePage from "../pages/results/FailurePage";
+import SpectatorHomePage from "../pages/spectator/SpectatorHomePage";
 
 const AppRoutes = () => {
   return (
@@ -17,6 +18,7 @@ const AppRoutes = () => {
       <Route path="/game/:roomId" element={<GameplayPage />} />
       <Route path="/results/success" element={<SuccessPage />} />
       <Route path="/results/failure" element={<FailurePage />} />
+      <Route path="/spectator" element={<SpectatorHomePage />} />
     </Routes>
   );
 };

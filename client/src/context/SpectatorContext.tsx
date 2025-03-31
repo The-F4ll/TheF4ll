@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, ReactNode } from "react";
-import { Spectator } from "../types/game.types";
+import { Spectator, Room } from "../types/game.types"; // Ajout de Room à l'importation
+import { v4 as uuidv4 } from "uuid";
 
 type SpectatorContextType = {
   spectator: Spectator | null;
@@ -7,6 +8,7 @@ type SpectatorContextType = {
   clearSpectator: () => void;
   castVote: (option: string) => void;
   currentVote: string | null;
+  getAllRooms: () => Promise<Room[]>;
 };
 
 const defaultContext: SpectatorContextType = {
@@ -15,6 +17,7 @@ const defaultContext: SpectatorContextType = {
   clearSpectator: () => {},
   castVote: () => {},
   currentVote: null,
+  getAllRooms: async () => [],
 };
 
 export const SpectatorContext =
@@ -53,6 +56,41 @@ export const SpectatorProvider: React.FC<{ children: ReactNode }> = ({
     }
   };
 
+  // Fonction pour récupérer toutes les salles disponibles
+  const getAllRooms = async (): Promise<Room[]> => {
+    // Dans une application réelle, ce serait un appel API
+    // Ici, on simule un délai
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    // Salles simulées
+    return [
+      {
+        id: "room1",
+        players: [
+          { id: "p1", name: "Alice", avatar: "avatar1", ready: true },
+          { id: "p2", name: "Bob", avatar: "avatar3", ready: false },
+        ],
+        spectators: [],
+        isGameStarted: false,
+      },
+      {
+        id: "room2",
+        players: [
+          { id: "p3", name: "Charlie", avatar: "avatar2", ready: true },
+          { id: "p4", name: "David", avatar: "avatar4", ready: true },
+        ],
+        spectators: [{ id: "s1", name: "Observer1" }],
+        isGameStarted: true,
+      },
+      {
+        id: "room3",
+        players: [{ id: "p5", name: "Eve", avatar: "avatar5", ready: false }],
+        spectators: [],
+        isGameStarted: false,
+      },
+    ];
+  };
+
   return (
     <SpectatorContext.Provider
       value={{
@@ -61,6 +99,7 @@ export const SpectatorProvider: React.FC<{ children: ReactNode }> = ({
         clearSpectator,
         castVote,
         currentVote,
+        getAllRooms,
       }}
     >
       {children}
