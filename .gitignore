@@ -3,6 +3,11 @@ node_modules/
 .pnp/
 .pnp.js
 
+# Production
+dist/
+build/
+out/
+
 # Environnement
 .env
 .env.local
@@ -37,4 +42,4 @@ coverage/
 *.tmp
 *.temp
 .DS_Store
-Thumbs.db
+Thumbs.db 
