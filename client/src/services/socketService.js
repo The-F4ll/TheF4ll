@@ -57,15 +57,15 @@ class SocketService {
         this.socket.disconnect();
       }
 
-      this.socket = io('http://localhost:3001', {
-        transports: ['websocket'],
+      this.socket = io('http://localhost:3000', {
+        transports: ['websocket', 'polling'],
         reconnection: true,
         reconnectionAttempts: this.maxReconnectionAttempts,
         reconnectionDelay: 1000,
         timeout: 10000,
         forceNew: true,
         autoConnect: true,
-        withCredentials: false,
+        withCredentials: true,
         auth: {
           playerName: this.playerName
         }
@@ -351,7 +351,9 @@ class SocketService {
     const roomHandler = (data) => {
       clearTimeout(roomTimeout);
       this.removeListener(SOCKET_EVENTS.ERROR);
-      callback(data);
+      if (data && data.id === roomId) {
+        callback(data);
+      }
     };
 
     this.socket.on(SOCKET_EVENTS.ROOM_UPDATE, roomHandler);
@@ -510,37 +512,43 @@ class SocketService {
       this.lastCreateRoomAttempt = now;
       
       // Nettoyer les anciens listeners
-      this.socket.off(SOCKET_EVENTS.ROOM_CREATED);
-      this.socket.off(SOCKET_EVENTS.ERROR);
+      this.removeListener(SOCKET_EVENTS.ROOM_CREATED);
+      this.removeListener(SOCKET_EVENTS.ERROR);
 
       // Ajouter un timeout pour la réponse
       const createTimeout = setTimeout(() => {
-        this.socket.off(SOCKET_EVENTS.ROOM_CREATED);
-        this.socket.off(SOCKET_EVENTS.ERROR);
+        this.removeListener(SOCKET_EVENTS.ROOM_CREATED);
+        this.removeListener(SOCKET_EVENTS.ERROR);
         this.emitError('Timeout lors de la création de la salle');
       }, 5000);
 
       // Ajouter un listener pour les erreurs
       const errorHandler = (error) => {
         clearTimeout(createTimeout);
-        this.socket.off(SOCKET_EVENTS.ROOM_CREATED);
-        this.socket.off(SOCKET_EVENTS.ERROR);
+        this.removeListener(SOCKET_EVENTS.ROOM_CREATED);
+        this.removeListener(SOCKET_EVENTS.ERROR);
         this.emitError(error.message || 'Erreur lors de la création de la salle');
       };
 
       // Ajouter un listener pour la création de la salle
       const createHandler = (roomData) => {
         clearTimeout(createTimeout);
-        this.socket.off(SOCKET_EVENTS.ERROR);
+        this.removeListener(SOCKET_EVENTS.ERROR);
         
         if (roomData && roomData.id) {
           console.log('✅ Salle créée:', roomData);
           this.currentRoomId = roomData.id;
+          
           // Rejoindre automatiquement la salle créée
-          this.joinGame(roomData.id, {
+          const playerData = {
             id: this.playerId,
             name: this.playerName
-          });
+          };
+          
+          // Attendre un court instant pour s'assurer que la salle est bien créée
+          setTimeout(() => {
+            this.joinGame(roomData.id, playerData);
+          }, 100);
         } else {
           this.emitError('Données de salle invalides reçues');
         }
