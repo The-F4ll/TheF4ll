@@ -127,7 +127,7 @@ const SpectatorHomePage: React.FC = () => {
     localStorage.setItem("demoRoom", JSON.stringify(demoRooms[0]));
 
     // Actualiser la liste
-    setRooms((prevRooms) => [...prevRooms, ...demoRooms]);
+    // setRooms((prevRooms) => [...prevRooms, ...demoRooms]);
   };
 
   return (

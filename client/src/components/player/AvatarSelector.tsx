@@ -1,9 +1,10 @@
 import React from "react";
 
-type AvatarSelectorProps = {
+interface AvatarSelectorProps {
   selectedAvatar: string;
   onSelect: (avatar: string) => void;
-};
+  disabled?: boolean; // Doit être un boolean optionnel
+}
 
 const AvatarSelector: React.FC<AvatarSelectorProps> = ({
   selectedAvatar,

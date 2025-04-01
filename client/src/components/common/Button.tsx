@@ -1,13 +1,14 @@
 import React from "react";
 
-type ButtonProps = {
-  children: React.ReactNode;
-  variant?: "primary" | "secondary" | "success" | "danger";
-  fullWidth?: boolean;
-  disabled?: boolean;
+interface ButtonProps {
+  variant: "primary" | "secondary" | "success" | "danger";
   type?: "button" | "submit" | "reset";
   onClick?: () => void;
-};
+  fullWidth?: boolean;
+  disabled?: boolean; // Doit être un boolean optionnel
+  children: React.ReactNode;
+  // autres props...
+}
 
 const Button: React.FC<ButtonProps> = ({
   children,

@@ -7,6 +7,7 @@ type InputProps = {
   placeholder?: string;
   type?: string;
   required?: boolean;
+  disabled?: boolean; // Doit être un boolean optionnel
 };
 
 const Input: React.FC<InputProps> = ({
@@ -16,6 +17,7 @@ const Input: React.FC<InputProps> = ({
   placeholder,
   type = "text",
   required = false,
+  disabled = false,
 }) => {
   return (
     <div className="w-full">
@@ -28,6 +30,7 @@ const Input: React.FC<InputProps> = ({
         onChange={onChange}
         placeholder={placeholder}
         required={required}
+        disabled={disabled}
         className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
       />
     </div>
