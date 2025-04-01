@@ -100,6 +100,20 @@ export const addPlayerToRoom = (roomId, playerData) => {
   const room = getRoom(roomId);
   if (!room || room.players.length >= room.maxPlayers) return null;
 
+  // Vérifier si le joueur existe déjà
+  const existingPlayerIndex = room.players.findIndex(
+    (p) => p.id === playerData.id
+  );
+
+  if (existingPlayerIndex !== -1) {
+    // Mettre à jour le joueur existant au lieu d'en ajouter un nouveau
+    room.players[existingPlayerIndex] = {
+      ...room.players[existingPlayerIndex],
+      ...playerData,
+    };
+    return room.players[existingPlayerIndex];
+  }
+
   const newPlayer = {
     id: uuidv4(),
     name: playerData.name,

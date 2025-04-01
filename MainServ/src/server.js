@@ -26,6 +26,10 @@ import {
   addPlayerToRoom,
   addSpectatorToRoom,
   updatePlayerReady,
+  getPlayerInRoom,
+  getRoom, // Ajoutez cette importation
+  removePlayerFromRoom, // Ajoutez cette importation
+  updateExistingPlayer, // Ajoutez cette importation
 } from "./utils/gameUtils.js";
 
 const app = express();
@@ -58,10 +62,50 @@ io.on("connection", (socket) => {
     const { roomId, player, spectator } = data;
 
     if (player) {
-      // Utiliser l'ID existant ou en générer un nouveau
+      // Toujours utiliser l'ID existant ou générer un ID unique
       const playerId = player.id || generatePlayerId();
 
-      // Ajouter le joueur à la room
+      // Vérifier si le joueur existe déjà dans TOUTES les rooms par son socketId
+      const existingRoom = getAllRooms().find((room) =>
+        room.players.some((p) => p.socketId === socket.id)
+      );
+
+      // Si le joueur est déjà présent dans une autre room, le retirer d'abord
+      if (existingRoom && existingRoom.id !== roomId) {
+        const playerToRemove = existingRoom.players.find(
+          (p) => p.socketId === socket.id
+        );
+        if (playerToRemove) {
+          removePlayerFromRoom(existingRoom.id, playerToRemove.id);
+          socket.leave(existingRoom.id);
+          io.to(existingRoom.id).emit(
+            "room_updated",
+            getUpdatedRoom(existingRoom.id)
+          );
+        }
+      }
+
+      // Vérifier si le joueur existe déjà dans la room par ID ou socketId
+      const existingPlayer =
+        getPlayerInRoom(roomId, playerId) ||
+        getRoom(roomId)?.players.find((p) => p.socketId === socket.id);
+
+      if (existingPlayer) {
+        // Mise à jour du joueur existant (notamment avec le nouveau socketId)
+        updateExistingPlayer(roomId, existingPlayer.id, {
+          ...player,
+          socketId: socket.id,
+          lastActive: Date.now(),
+        });
+
+        socket.join(roomId);
+        socket.emit("assigned_id", existingPlayer.id);
+        io.to(roomId).emit("room_updated", getUpdatedRoom(roomId));
+        if (callback) callback(existingPlayer.id);
+        return;
+      }
+
+      // Ajouter le joueur à la room (seulement s'il n'existe pas déjà)
       const playerWithId = { ...player, id: playerId };
       const success = addPlayerToRoom(roomId, playerWithId);
 
@@ -153,7 +197,42 @@ io.on("connection", (socket) => {
   // Déconnexion
   socket.on("disconnect", () => {
     console.log("Client déconnecté:", socket.id);
-    // Gérer la déconnexion (supprimer le joueur des salles, etc.)
+
+    // Rechercher le joueur dans toutes les rooms
+    const allRooms = getAllRooms();
+    for (const room of allRooms) {
+      const playerIndex = room.players.findIndex(
+        (p) => p.socketId === socket.id
+      );
+      if (playerIndex !== -1) {
+        const player = room.players[playerIndex];
+
+        // Option 1: Supprimer immédiatement le joueur
+        // removePlayerFromRoom(room.id, player.id);
+
+        // Option 2: Marquer le joueur comme déconnecté mais le conserver un certain temps
+        updateExistingPlayer(room.id, player.id, {
+          isConnected: false,
+          disconnectedAt: Date.now(),
+        });
+
+        // Informer tous les joueurs de la room
+        io.to(room.id).emit("room_updated", getUpdatedRoom(room.id));
+
+        // Si on implémente un système de timeout, on peut ajouter:
+        // setTimeout(() => {
+        //   const currentRoom = getRoom(room.id);
+        //   if (currentRoom) {
+        //     const playerStillDisconnected = currentRoom.players.find(p =>
+        //       p.id === player.id && !p.isConnected);
+        //     if (playerStillDisconnected) {
+        //       removePlayerFromRoom(room.id, player.id);
+        //       io.to(room.id).emit("room_updated", getUpdatedRoom(room.id));
+        //     }
+        //   }
+        // }, 5 * 60 * 1000); // 5 minutes pour se reconnecter
+      }
+    }
   });
 });
 

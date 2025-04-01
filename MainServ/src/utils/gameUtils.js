@@ -176,3 +176,68 @@ export const getRoomById = (roomId) => {
 export const deleteRoomFromMemory = (roomId) => {
   return rooms.delete(roomId);
 };
+
+/**
+ * Récupère une room par son ID
+ * @param {string} roomId - L'identifiant de la room à récupérer
+ * @returns {Object|null} - La room trouvée ou null si elle n'existe pas
+ */
+export const getRoom = (roomId) => {
+  const rooms = getAllRooms();
+  return rooms.find((room) => room.id === roomId) || null;
+};
+
+/**
+ * Vérifie si un joueur existe déjà dans une room
+ * @param {string} roomId - ID de la room
+ * @param {string} playerId - ID du joueur
+ * @returns {object|null} - Le joueur s'il existe, null sinon
+ */
+export const getPlayerInRoom = (roomId, playerId) => {
+  const room = getRoom(roomId);
+  if (!room) return null;
+
+  return room.players.find((p) => p.id === playerId) || null;
+};
+
+/**
+ * Supprime un joueur d'une room
+ * @param {string} roomId - L'identifiant de la room
+ * @param {string} playerId - L'identifiant du joueur à supprimer
+ * @returns {boolean} - true si le joueur a été supprimé, false sinon
+ */
+export const removePlayerFromRoom = (roomId, playerId) => {
+  const room = getRoom(roomId);
+  if (!room) return false;
+
+  const playerIndex = room.players.findIndex((p) => p.id === playerId);
+  if (playerIndex === -1) return false;
+
+  // Supprimer le joueur de la liste
+  room.players.splice(playerIndex, 1);
+
+  return true;
+};
+
+/**
+ * Met à jour les données d'un joueur existant dans une room
+ * @param {string} roomId - L'identifiant de la room
+ * @param {string} playerId - L'identifiant du joueur à mettre à jour
+ * @param {Object} updates - Les données à mettre à jour
+ * @returns {boolean} - true si le joueur a été mis à jour, false sinon
+ */
+export const updateExistingPlayer = (roomId, playerId, updates) => {
+  const room = getRoom(roomId);
+  if (!room) return false;
+
+  const playerIndex = room.players.findIndex((p) => p.id === playerId);
+  if (playerIndex === -1) return false;
+
+  // Mettre à jour le joueur
+  room.players[playerIndex] = {
+    ...room.players[playerIndex],
+    ...updates,
+  };
+
+  return true;
+};
